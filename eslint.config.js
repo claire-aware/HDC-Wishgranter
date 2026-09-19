@@ -37,7 +37,7 @@ export default defineConfig(
     },
     {
         files: ["./**/*.ts"],
-        ignores: ["./**/node_env/*.ts"],
+        ignores: ["src/node_env/*.ts", "./*.ts"],
         rules: {
             "no-restricted-imports": "off",
             "@typescript-eslint/no-restricted-imports": [

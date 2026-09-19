@@ -1,7 +1,3 @@
-import type { Resource } from "./wishgranter.jsons.js";
-import type { Data } from "./wishgranter.jsons.js";
-import type { LoadSequenceElement } from "./mod_menu/loadingBar.ts";
-
 declare global {
     var gdjs: gdjs;
 }
@@ -24,10 +20,6 @@ export interface gdjs {
         set: (resource: Resource, a: A) => void;
         delete: (resource: Resource) => void;
         clear: () => void;
-    };
-    LoadingScreenRenderer?: {
-        new (): unknown;
-        getLoadingElements: () => LoadSequenceElement<[]>[];
     };
     CommandCode: Record<
         string,
@@ -95,4 +87,105 @@ export interface RuntimeScene {
 
 export interface Variable {
     fromJSObject: (object: object) => void;
+}
+
+export interface Data {
+    properties: {
+        authorUsernames: string[];
+        watermark: {
+            showWatermark: boolean;
+            placement:
+                | "top-left"
+                | "top-right"
+                | "bottom-left"
+                | "bottom-right"
+                | "bottom"
+                | "top";
+        };
+    };
+    resources: {
+        resources: {
+            file: string;
+            kind: ResourceKind;
+            metadata: string;
+            name: string;
+            smoothed?: boolean;
+            userAdded: boolean;
+            disablePreload?: boolean;
+            preloadAsSound?: boolean;
+            preloadAsMusic?: boolean;
+            preloadInCache?: boolean;
+        }[];
+    };
+    usedResources: { name: string }[];
+    layouts: { name: string; usedResources: { name: string }[] }[];
+    variables;
+    eventsFunctionsExtensions;
+}
+export type UnloadedVariable =
+    | { folded?: true; name: string; type: "number"; value: number }
+    | { folded?: true; name: string; type: "string"; value: string }
+    | {
+          folded?: true;
+          name: string;
+          type: "array";
+          children: (
+              | { type: "number"; value: number }
+              | { type: "string"; value: string }
+          )[];
+      }
+    | {
+          folded?: true;
+          name: string;
+          type: "structure";
+          children: UnloadedVariable[];
+      };
+export interface Animation {
+    /**
+     * When used for card animations, the card id is used
+     */
+    name: string;
+    useMultipleDirections: false;
+    directions: {
+        looping: true;
+        /**
+         * In seconds
+         */
+        timeBetweenFrames: number;
+        sprites: AnimationFrame[];
+    }[];
+}
+export interface AnimationFrame {
+    /**
+     * Id of a sprite defined in Resources
+     */
+    image: string;
+    points: {
+        name: string;
+        x: number;
+        y: number;
+    }[];
+    originPoint: {
+        name: "origine";
+        x: number;
+        y: number;
+    };
+    centerPoint: {
+        automatic: boolean;
+        name: "centre";
+        x: number;
+        y: number;
+    };
+    hasCustomCollisionMask: true;
+    customCollisionMask: { x: number; y: number }[][];
+}
+
+export interface Resource {
+    disablePreload?: boolean;
+    file: string;
+    kind: string;
+    metadata?: string;
+    name: string;
+    smoothed: boolean;
+    userAdded: boolean;
 }

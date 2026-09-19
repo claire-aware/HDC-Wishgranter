@@ -3,13 +3,11 @@ import { contextBridge, ipcRenderer } from "electron";
 declare global {
     interface Window {
         mod_menu: ModMenu;
-        wishgranter: Wishgranter;
         remote_replace: RemoteReplace;
     }
 }
 
 export type ModMenu = typeof mod_menu;
-export type Wishgranter = typeof wishgranter;
 export type RemoteReplace = typeof remote_replace;
 
 let sep = "/";
@@ -22,37 +20,8 @@ const cached_files: Map<string, string> = new Map<string, string>();
 const mod_menu = {
     getDefaultHyperspacePath: () =>
         ipcRenderer.invoke("getDefaultHyperspacePath") as Promise<string>,
-    getDefaultModsPath: () =>
-        ipcRenderer.invoke("getDefaultModsPath") as Promise<string>,
-    getDefaultModPaths: () =>
-        ipcRenderer.invoke("getDefaultModPaths") as Promise<
-            { mod_directory_path: string; enabled: boolean }[]
-        >,
-    savePaths: (
-        hyperspace_path: string,
-        mods_path: string,
-        ...mod_paths: { mod_directory_path: string; enabled: boolean }[]
-    ) =>
-        ipcRenderer.invoke(
-            "savePaths",
-            hyperspace_path,
-            mods_path,
-            ...mod_paths,
-        ),
-    getSteamGameLocation: () =>
-        ipcRenderer.invoke("getSteamGameLocation") as Promise<string>,
-    getModsFromLocation: (location: string) =>
-        ipcRenderer.invoke("getModsFromLocation", location) as Promise<
-            Iterable<string>
-        >,
-    askUserForDirectory: (start_directory: string) =>
-        ipcRenderer.invoke(
-            "askUserForDirectory",
-            start_directory,
-        ) as Promise<string>,
-};
-
-const wishgranter = {
+    askUserForDirectory: () =>
+        ipcRenderer.invoke("askUserForDirectory") as Promise<string>,
     getHyperspaceScriptTags: (hyperspace_path: string) =>
         ipcRenderer.invoke(
             "getHyperspaceScriptTags",
@@ -75,6 +44,7 @@ const wishgranter = {
             string[]
         >,
 };
+
 const remote_replace = {
     getPaths: getPaths,
     getCurrentWindow: () => {
@@ -132,7 +102,6 @@ const remote_replace = {
 
 contextBridge.exposeInMainWorld("mod_menu", mod_menu);
 contextBridge.exposeInMainWorld("remote_replace", remote_replace);
-contextBridge.exposeInMainWorld("wishgranter", wishgranter);
 
 async function getPaths() {
     is_packaged = (await ipcRenderer.invoke("isPackaged")) as boolean;

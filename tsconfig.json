@@ -7,7 +7,7 @@
       "DOM"
     ],
     "module": "nodenext",
-    "rootDir": "src",
+    "rootDir": ".",
     "allowJs": true,
     "checkJs": true,
     "declaration": true,
@@ -26,6 +26,9 @@
     ]
   },
   "include": [
-    "./src"
+    "./src",
+    "./eslint.config.js",
+    "./stylelint.config.mjs",
+    "./forge.config.ts",
   ]
 }

@@ -1,0 +1,20 @@
+@font-face {
+    font-family: Oxanium;
+    src: url("Oxanium-Hyper.ttf");
+}
+
+html {
+    font-family: Oxanium, monospace;
+
+    --background-color: #2121ff;
+    --foreground-color: #affafe;
+    --highlight-color: #ffda45;
+    --border-ui-color: var(--background-color);
+
+    color: var(--foreground-color);
+    background-color: black;
+}
+
+#error {
+    color: red;
+}
