@@ -18,6 +18,8 @@ import type { AnimationFrame } from "./wishgranter.jsons.d.ts";
 import type { Data } from "./wishgranter.jsons.d.ts";
 import type { CardAnimations } from "./wishgranter.jsons.d.ts";
 import type { ModEntry } from "./mod_menu/modEntry.ts";
+import type { RuntimeScene } from "./gdjs.js";
+import type { Code0Adjuster } from "./mods/mod.ts";
 
 const cachedJsons = new Map<`${string}.json`, Jsons>();
 export function getJsonFromMods(
@@ -54,6 +56,50 @@ export function getJsonFromMods(json_name: `${string}.json`): Jsons {
                 ) as Jsons,
     );
 }
+
+export async function getCodeFromMods(): Promise<typeof gdjs.CommandCode> {
+    return await (
+        Array.from(
+            document.getElementById("modlist")?.children ?? [],
+        ) as ModEntry[]
+    )
+        .filter((mod_entry) => mod_entry.enabled)
+        .map((mod_entry) => mod_entry.getCode0Adjustments())
+        .reduce(
+            async (
+                command_code_promise: Promise<typeof gdjs.CommandCode>,
+                adjustment: Promise<Code0Adjuster>,
+            ): Promise<typeof gdjs.CommandCode> => {
+                const command_code: typeof gdjs.CommandCode =
+                    await command_code_promise;
+                for (const name in command_code) {
+                    if (!name.startsWith("eventsList")) continue;
+                    command_code[name as `eventsList${number}`] = (
+                        await adjustment
+                    )(command_code[name as `eventsList${number}`]) as (
+                        runtime_scene: RuntimeScene,
+                    ) => void;
+                }
+                return command_code;
+            },
+            new Promise<typeof gdjs.CommandCode>((resolve) => {
+                eval(
+                    (
+                        Array.from(
+                            document.getElementById("modlist")?.children ?? [],
+                        ) as ModEntry[]
+                    )
+                        .filter((mod_entry) => mod_entry.enabled)
+                        .map((mod_entry) => mod_entry.getCode())
+                        .reduce(
+                            (new_code: string, code: string) => code + new_code,
+                        ),
+                );
+                resolve(gdjs.CommandCode);
+            }),
+        );
+}
+
 let cachedData: Data | undefined = undefined;
 export function getDataFromMods(): Data {
     return (cachedData ??= mergeDeep(
@@ -156,7 +202,7 @@ export function getDataFromCardAnimations(
         ],
     };
 }
-let cachedCode0: string | undefined = undefined;
+
 function getAnimationsOfPorObj(
     animations: CardAnimations,
     cards: Record<
@@ -320,21 +366,6 @@ function populateAnimationFramePoints(
             ),
         };
     };
-}
-
-export function getCode0FromMods(): string {
-    return (cachedCode0 ??= (
-        Array.from(
-            document.getElementById("modlist")?.children ?? [],
-        ) as ModEntry[]
-    )
-        .filter((mod_entry) => mod_entry.enabled)
-        .map((mod_entry) => mod_entry.getCode0Adjustments())
-        .reduce(
-            (code0: string, adjustments: (code0: string) => string) =>
-                adjustments(code0),
-            "",
-        ));
 }
 
 export function mergeDeep<MergeTarget = object>(

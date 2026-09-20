@@ -1,7 +1,7 @@
 import { fixDataPaths } from "../fileFactory.ts";
 import type { Data } from "../jsons.d.ts";
 
-import { Mod, type ModMetadata } from "./mod.ts";
+import { type Code0Adjuster, Mod, type ModMetadata } from "./mod.ts";
 import type { LoadSequenceElement } from "../mod_menu/loadingBar.ts";
 
 export class BaseGameMod extends Mod {
@@ -44,6 +44,9 @@ export class BaseGameMod extends Mod {
         }
         return super.load(...files_to_load);
     }
+    getCode(): string | undefined {
+        return this.file_map.get("code0.js");
+    }
     getData(): Data {
         if (this.cached_data) return this.cached_data as Data;
         const file = this.file_map.get("data.js");
@@ -58,8 +61,10 @@ export class BaseGameMod extends Mod {
             this.mod_directory_path,
         ) as Data);
     }
-    getCode0Adjustments(): (code0: string) => string {
-        return () => this.file_map.get("code0.js") ?? "";
+    getCode0Adjustments(): Promise<Code0Adjuster> {
+        return new Promise((resolve) => {
+            resolve((out) => out);
+        });
     }
     getMetadata(): ModMetadata {
         if (this.cached_metadata) return this.cached_metadata;

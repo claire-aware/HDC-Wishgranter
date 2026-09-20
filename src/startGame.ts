@@ -3,7 +3,7 @@ import type {
     LoadingBarElement,
 } from "./mod_menu/loadingBar.ts";
 import { loadWishgranter, unloadWishgranter } from "./loadWishgranter.ts";
-import { getDataFromMods } from "./fileFactory.ts";
+import { getDataFromMods, getCodeFromMods } from "./fileFactory.ts";
 
 const loading_bar = document.getElementsByTagName(
     "loading-bar",
@@ -12,7 +12,7 @@ const start_game_button = document.getElementById(
     "start-game-button",
 ) as HTMLButtonElement;
 
-function baseStartGame() {
+async function baseStartGame() {
     //Initialization
     const gdgame = new gdjs.RuntimeGame(getDataFromMods(), {});
 
@@ -29,6 +29,8 @@ function baseStartGame() {
     gdgame
         .getRenderer()
         .bindStandardEvents(gdgame.getInputManager(), window, document);
+
+    gdjs.CommandCode = await getCodeFromMods();
 
     //Load all assets and start the game
     gdgame.loadAllAssets(() => {

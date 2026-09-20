@@ -29,13 +29,27 @@ export interface gdjs {
         new (): unknown;
         getLoadingElements: () => LoadSequenceElement<[]>[];
     };
-    CommandCode: Record<
-        string,
-        | unknown[]
-        | ((runtime_game: RuntimeGame) => void)
-        | ((runtime_scene: RuntimeScene) => void)
-        | null
-    >;
+    CommandCode: {
+        localVariables: Array;
+        idToCallbackMap: Map;
+        func: (runtime_scene: RuntimeScene) => void;
+    } & Record<`GD${string}Objects${number}_${number}final`, unknown[]> &
+        Record<`forEachCount${number}_${number}`, number> &
+        Record<`forEachIndex${number}`, number> &
+        Record<`forEachObjects${number}`, unknown[]> &
+        Record<`forEachTemporary${number}`, unknown> &
+        Record<`forEachTotalCount${number}`, number> &
+        Record<`GD${string}Objects${number}`, unknown[]> &
+        Record<`eventsList${number}`, (runtime_scene: RuntimeScene) => void> &
+        Record<
+            `mapOfGDgdjs_9546CommandCode_9546GD${string}Objects${number}Objects`,
+            Hashtable
+        > &
+        Record<
+            `asyncCallback${number}`,
+            (runtime_scene: RuntimeScene, asyncObjectsList) => void
+        >;
+
     RuntimeGame: RuntimeGameClass;
     copyArray: (from: unknown[], to: unknown[]) => void;
     evtTools: {

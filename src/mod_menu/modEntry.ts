@@ -1,6 +1,6 @@
 import { WishgranterMod } from "../mods/wishgranterMod.ts";
 import { BaseGameMod } from "../mods/baseGameMod.ts";
-import { Mod } from "../mods/mod.ts";
+import { type Code0Adjuster, Mod } from "../mods/mod.ts";
 import type {
     BaseGameJsons as Jsons,
     Cards,
@@ -159,13 +159,15 @@ class ModEntry extends HTMLElement {
     getData() {
         return this.mod?.getData() ?? {};
     }
-    getCode0Adjustments() {
-        return (
-            this.mod?.getCode0Adjustments() ??
-            function (out: string) {
-                return out;
-            }
-        );
+    getCode() {
+        return this.mod?.getCode() ?? "";
+    }
+    getCode0Adjustments(): Promise<Code0Adjuster> {
+        if (!this.mod)
+            return new Promise((resolve) => {
+                resolve((out) => out);
+            });
+        return this.mod.getCode0Adjustments();
     }
     getCardAnimations() {
         return this.mod?.getCardAnimations() ?? {};

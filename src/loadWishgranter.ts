@@ -1,5 +1,4 @@
 import type { LoadSequenceElement } from "./mod_menu/loadingBar.ts";
-import { getCode0FromMods } from "./fileFactory.ts";
 
 export function unloadWishgranter() {
     document.body.classList.remove("game_loadable");
@@ -22,15 +21,13 @@ export async function loadWishgranter(
         );
 }
 
-const exclusions = ["data.js"];
+const exclusions = ["code0.js", "data.js"];
 
 type ReplacementMap = Record<
     `${string}.js`,
     | string
     | Promise<string>
-    | ((
-          hyperspace_path: string,
-      ) => AsyncIterable<string> | Iterable<string> | Promise<string> | string)
+    | ((hyperspace_path: string) => Promise<string> | string)
 >;
 const replacements: ReplacementMap = {
     "pixi-renderers/loadingscreen-pixi-renderer.js":
@@ -40,32 +37,8 @@ const replacements: ReplacementMap = {
     "jsonmanager.js": "dist/reimplementations/jsonManagerReimplementation.js",
 
     "pixi-renderers/runtimegame-pixi-renderer.js": replaceElectronRemote,
-    "code0.js": replaceCode0,
 };
 const dev_replacements: ReplacementMap = {};
-
-async function* replaceCode0(): AsyncIterable<string> {
-    const code0 = getCode0FromMods();
-    if (window.remote_replace.app.isPackaged()) {
-        yield window.wishgranter.createTemporaryFile("code0.js", code0);
-        return;
-    }
-
-    const regex =
-        /gdjs.CommandCode.eventsList\d+ ?= ?function ?\(runtimeScene(, ?asyncObjectsList)?\) ?\{[^]*?\};/g;
-    yield window.wishgranter.createTemporaryFile(
-        "code0remainder.js",
-        code0.replaceAll(regex, ""),
-    );
-    yield* code0
-        .match(regex)
-        ?.map((match, index) =>
-            window.wishgranter.createTemporaryFile(
-                `code0event${index.toString()}.js`,
-                match,
-            ),
-        ) ?? [];
-}
 
 function replaceElectronRemote(hyperspace_path: string): Promise<string> {
     return window.wishgranter
@@ -122,31 +95,14 @@ function getAddPossiblyReplacedScriptLoadSequenceElement(
     } else {
         return {
             status_text: `Replacing ${script_name}`,
-            estimated_loading_time_multiplier: 100,
             function: async (hyperspace_path) => {
                 const script_source_result = await (
                     replacement_map[script_source] as (
                         hyperspace_path: string,
-                    ) =>
-                        | AsyncIterable<string>
-                        | Iterable<string>
-                        | Promise<string>
-                        | string
+                    ) => Promise<string> | string
                 )(hyperspace_path);
-                if (typeof script_source_result == "string")
-                    return addScript(script_source_result, false);
-                else {
-                    const out = [];
-                    for await (const sub_script_source of script_source_result) {
-                        out.push(() => addScript(sub_script_source, false));
-                    }
-                    return out.map((func, index) => {
-                        return {
-                            status_text: `Loading ${script_name} ${index.toString()}/${out.length.toString()}`,
-                            function: func,
-                        };
-                    });
-                }
+
+                return addScript(script_source_result, false);
             },
         };
     }

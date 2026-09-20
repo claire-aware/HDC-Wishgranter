@@ -18,6 +18,7 @@ import type {
 } from "../hyperspace.jsons.d.ts";
 import type { Data, CardAnimations } from "../wishgranter.jsons.d.ts";
 import type { LoadSequenceElement } from "../mod_menu/loadingBar.ts";
+import type { RuntimeScene } from "../gdjs.js";
 
 export interface ModMetadata {
     name: string;
@@ -101,6 +102,9 @@ export class Mod {
             return JSON.parse(file) as Jsons;
         });
     }
+    getCode(): string | undefined {
+        return undefined;
+    }
     protected cached_data: Partial<Data> | undefined = undefined;
     getData(): Partial<Data> {
         if (this.cached_data) return this.cached_data;
@@ -159,24 +163,24 @@ export class Mod {
         );
         return (this.cached_metadata = metadata);
     }
-    protected cached_code_0_adjustment:
-        | ((code0: string) => string)
-        | undefined = undefined;
-    getCode0Adjustments(): (code0: string) => string {
+    protected cached_code_0_adjustment: Code0Adjuster | undefined = undefined;
+    async getCode0Adjustments(): Promise<Code0Adjuster> {
         if (this.cached_code_0_adjustment) return this.cached_code_0_adjustment;
         const file = this.file_map.get("code0adjustments.js");
         if (!file) return (out) => out;
         try {
-            const adjustment = eval(file) as unknown;
-            if (
-                typeof adjustment != "function" ||
-                adjustment.length != 1 ||
-                typeof (adjustment as (a: unknown) => unknown)("a") != "string"
-            )
-                return (out) => out;
-            return (this.cached_code_0_adjustment = adjustment as (
-                code0: string,
-            ) => string);
+            const adjustment = (
+                (await import(
+                    window.remote_replace.path.join(
+                        this.mod_directory_path,
+                        "code0adjustments.js",
+                    )
+                )) as {
+                    code0Adjuster?: Code0Adjuster;
+                }
+            ).code0Adjuster;
+            if (adjustment) return (this.cached_code_0_adjustment = adjustment);
+            return (out) => out;
         } catch {
             return (out) => out;
         }
@@ -185,3 +189,7 @@ export class Mod {
         return mod_path == this.mod_directory_path;
     }
 }
+
+export type Code0Adjuster = (
+    adjustable: (runtime_scene: RuntimeScene) => void,
+) => (runtime_scene: RuntimeScene) => void;
