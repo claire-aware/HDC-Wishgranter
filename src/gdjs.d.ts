@@ -72,7 +72,7 @@ export interface gdjs {
         };
     };
     evtsExt__GetPropertiesData__ReturnGameVersion: {
-        func: (runtime: RuntimeGame, other: null) => string;
+        func: (runtime: RuntimeScene, other: null) => string;
     };
     evtsExt__JSONResourceLoader__LoadJSONToScene: {
         func: (
@@ -104,9 +104,11 @@ export interface RuntimeScene {
     getScene: () => RuntimeScene;
     getVariables: () => {
         getFromIndex: (index: number) => Variable;
+        get: (name: string) => Variable;
     };
 }
 
 export interface Variable {
     fromJSObject: (object: object) => void;
+    getValue(): boolean | number | string;
 }

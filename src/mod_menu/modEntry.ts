@@ -156,6 +156,9 @@ class ModEntry extends HTMLElement {
     getJson(josn_name: `${string}.json`): Partial<Jsons> {
         return this.mod?.getJson(josn_name) ?? {};
     }
+    getName() {
+        return this.mod?.getMetadata().name ?? "Unknown Mod";
+    }
     getData() {
         return this.mod?.getData() ?? {};
     }

@@ -3,7 +3,11 @@ import type {
     LoadingBarElement,
 } from "./mod_menu/loadingBar.ts";
 import { loadWishgranter, unloadWishgranter } from "./loadWishgranter.ts";
-import { getDataFromMods, getCodeFromMods } from "./fileFactory.ts";
+import {
+    getDataFromMods,
+    getCodeFromMods,
+    cacheCodeFromMods,
+} from "./fileFactory.ts";
 
 const loading_bar = document.getElementsByTagName(
     "loading-bar",
@@ -52,6 +56,10 @@ export async function startGame() {
 
 function loadHyperspaceDeckCommand(): LoadSequenceElement[] {
     return [
+        {
+            status_text: "Modifying Code",
+            function: cacheCodeFromMods,
+        },
         {
             status_text: "Starting Game",
             function: baseStartGame,

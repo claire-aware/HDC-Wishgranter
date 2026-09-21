@@ -1,7 +1,11 @@
-import { getDataFromMods } from "../fileFactory.ts";
 import { type Code0Adjuster, Mod, type ModMetadata } from "./mod.ts";
-import { commentCode0 } from "../reimplementations/code0Commenter.ts";
 import type { RuntimeScene } from "../gdjs.js";
+import {
+    applyToObject,
+    commentEventList,
+    simplifyEventList,
+} from "../codeReplacementHelpers.ts";
+import { getDataFromMods } from "../fileFactory.ts";
 
 export class WishgranterMod extends Mod {
     constructor(enabled = true, mod_directory_path = ".") {
@@ -20,28 +24,7 @@ export class WishgranterMod extends Mod {
 
     getCode0Adjustments(): Promise<Code0Adjuster> {
         return new Promise((resolve) => {
-            resolve((adjustable: (scene: RuntimeScene) => void) => {
-                if (window.remote_replace.app.isPackaged())
-                    adjustable = eval(
-                        "{" +
-                            commentCode0(
-                                adjustable.toString(),
-                                getDataFromMods(),
-                            ).replace(/function ?\(/, "function adjustable(") +
-                            "}",
-                    ) as (scene: RuntimeScene) => void;
-
-                adjustable = eval(
-                    "{" +
-                        replaceVersionText(adjustable.toString()).replace(
-                            /function ?\(/,
-                            "function adjustable(",
-                        ) +
-                        "}",
-                ) as (scene: RuntimeScene) => void;
-                console.log(adjustable.toString());
-                return adjustable;
-            });
+            resolve(code0Adjustments);
         });
     }
     getMetadata(): ModMetadata {
@@ -54,10 +37,79 @@ export class WishgranterMod extends Mod {
     }
 }
 
-function replaceVersionText(code0: string): string {
-    code0 = code0.replace(
-        /(?<=gdjs\s*\.evtsExt__GetPropertiesData__ReturnGameVersion\.func\(\s*runtimeScene,\s*null,?\s*\)\s*\+\s*")[\w()\s-]*(?="?)/g,
-        ` (${(document.getElementById("modlist")?.children.length ?? 2) > 2 ? `${((document.getElementById("modlist")?.children.length ?? 2) - 2).toString()} Mods Loaded` : "Modded"} - Wishgranter)`,
-    );
-    return code0;
+let console_history = "\n";
+let logger = (...msg: string[]) => {
+    console_history += msg.reduce((prev, cur) => prev + " " + cur) + "\n";
+};
+const old_log = console.log;
+console.log = (...msg: string[]) => {
+    old_log(...msg);
+    logger(...msg);
+};
+const old_warn = console.warn;
+console.warn = (...msg: string[]) => {
+    old_warn(...msg);
+    logger(...["Warning:", ...msg]);
+};
+const old_error = console.error;
+console.error = (...msg: string[]) => {
+    old_error(...msg);
+    logger(...["!Error!:", ...msg]);
+};
+
+function code0Adjustments(
+    adjustable: (scene: RuntimeScene) => void,
+): (scene: RuntimeScene) => void {
+    adjustable = simplifyEventList(adjustable);
+    if (!window.remote_replace.app.isPackaged())
+        adjustable = commentEventList(adjustable, getDataFromMods());
+    return replaceVersionText(adjustable);
+}
+
+function replaceVersionText(
+    adjustable: (scene: RuntimeScene) => void,
+): (scene: RuntimeScene) => void {
+    const default_version_text_match = adjustable
+        .toString()
+        .match(
+            /(?<=gdjs\s*\.evtsExt__GetPropertiesData__ReturnGameVersion\.func\(\s*runtimeScene,\s*null,?\s*\)\s*\+\s*")[\w()\s-]*(?=")/g,
+        );
+    if (!default_version_text_match) return adjustable;
+
+    return (runtimeScene: RuntimeScene) => {
+        gdjs.copyArray(
+            gdjs.CommandCode.GDtxt_9595uiObjects2,
+            gdjs.CommandCode.GDtxt_9595uiObjects3,
+        );
+
+        applyToObject("txt_ui", 3, (txt_ui) => {
+            (txt_ui as { setString: (new_string: string) => void }).setString(
+                gdjs.evtsExt__GetPropertiesData__ReturnGameVersion.func(
+                    runtimeScene,
+                    null,
+                ) +
+                    default_version_text_match[0] +
+                    console_history,
+            );
+            (
+                txt_ui as { setTextAlignment: (right: "right") => void }
+            ).setTextAlignment("right");
+        });
+
+        logger = (...msg) => {
+            logger(...msg);
+            applyToObject("txt_ui", 3, (txt_ui) => {
+                (
+                    txt_ui as { setString: (new_string: string) => void }
+                ).setString(
+                    gdjs.evtsExt__GetPropertiesData__ReturnGameVersion.func(
+                        runtimeScene,
+                        null,
+                    ) +
+                        default_version_text_match[0] +
+                        console_history,
+                );
+            });
+        };
+    };
 }

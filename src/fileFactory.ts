@@ -20,6 +20,7 @@ import type { CardAnimations } from "./wishgranter.jsons.d.ts";
 import type { ModEntry } from "./mod_menu/modEntry.ts";
 import type { RuntimeScene } from "./gdjs.js";
 import type { Code0Adjuster } from "./mods/mod.ts";
+import type { LoadSequenceElement } from "./mod_menu/loadingBar.ts";
 
 const cachedJsons = new Map<`${string}.json`, Jsons>();
 export function getJsonFromMods(
@@ -57,8 +58,9 @@ export function getJsonFromMods(json_name: `${string}.json`): Jsons {
     );
 }
 
+let cachedCode0: typeof gdjs.CommandCode | undefined = undefined;
 export async function getCodeFromMods(): Promise<typeof gdjs.CommandCode> {
-    return await (
+    return (cachedCode0 ??= await (
         Array.from(
             document.getElementById("modlist")?.children ?? [],
         ) as ModEntry[]
@@ -89,15 +91,56 @@ export async function getCodeFromMods(): Promise<typeof gdjs.CommandCode> {
                             document.getElementById("modlist")?.children ?? [],
                         ) as ModEntry[]
                     )
-                        .filter((mod_entry) => mod_entry.enabled)
                         .map((mod_entry) => mod_entry.getCode())
-                        .reduce(
-                            (new_code: string, code: string) => code + new_code,
-                        ),
+                        .reduce((new_code, code) => code + new_code),
                 );
                 resolve(gdjs.CommandCode);
             }),
-        );
+        ));
+}
+export function cacheCodeFromMods(): LoadSequenceElement[] {
+    return (
+        [
+            {
+                status_text: "Getting code from base game",
+                function: () => {
+                    eval(
+                        (
+                            Array.from(
+                                document.getElementById("modlist")?.children ??
+                                    [],
+                            ) as ModEntry[]
+                        )
+                            .map((mod_entry) => mod_entry.getCode())
+                            .reduce((new_code, code) => code + new_code),
+                    );
+                    cachedCode0 = gdjs.CommandCode;
+                },
+            },
+        ] as LoadSequenceElement[]
+    ).concat(
+        (
+            Array.from(
+                document.getElementById("modlist")?.children ?? [],
+            ) as ModEntry[]
+        )
+            .filter((mod_entry) => mod_entry.enabled)
+            .map((mod_entry) => {
+                return {
+                    status_text: `Adjusting for ${mod_entry.getName()}`,
+                    function: async () => {
+                        for (const name in cachedCode0) {
+                            if (!name.startsWith("eventsList")) continue;
+                            cachedCode0[name as `eventsList${number}`] = (
+                                await mod_entry.getCode0Adjustments()
+                            )(cachedCode0[name as `eventsList${number}`]) as (
+                                runtime_scene: RuntimeScene,
+                            ) => void;
+                        }
+                    },
+                };
+            }) as LoadSequenceElement[],
+    );
 }
 
 let cachedData: Data | undefined = undefined;
