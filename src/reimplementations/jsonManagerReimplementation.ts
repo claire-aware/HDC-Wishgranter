@@ -1,5 +1,5 @@
-import type { Resource } from "../wishgranter.jsons.js";
-import { getJsonFromMods } from "../fileFactory.ts";
+import { getCachedJson } from "../fileFactory.ts";
+import type { Resource } from "../json_factories/data.ts";
 
 const logger = new gdjs.Logger("JSON Manager");
 
@@ -78,7 +78,7 @@ gdjs.JsonManager = class JsonManager {
         ] as `${string}.json`;
 
         // Cache the result
-        this._loadedJsons.set(resource, getJsonFromMods(json_file_name));
+        this._loadedJsons.set(resource, getCachedJson(json_file_name));
     }
 
     isJsonLoaded(resourceName: string): boolean {

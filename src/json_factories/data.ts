@@ -1,35 +1,4 @@
-export type WishgranterJsons = CardAnimations | Data;
-
 /**
- * Helper json to define card animations which eventually gets conveted and merged into Data
- */
-export type CardAnimations = Record<
-    string,
-    {
-        /**
-         * Local paths to sprites (png, svg, jpeg)
-         */
-        sprites: string[];
-        /**
-         * Pixel coordanates for guns, bomber/fighter spawning, and alignment.
-         * If more than one point record is given, any frames without definition will be linearly interpolated.
-         * If an array, defined points will be spread evenly across frames
-         */
-        points: CardAnimationPoints;
-        /**
-         * Points of a polygon where the mouse will consider this sprite selected
-         **/
-        collison_polygon: { x: number; y: number }[];
-        /**
-         * If defined, instead of shuffling the sprites in sprites to create the sparkel, the sprites will appear in the order spesified. Repeats encouraged.
-         */
-        frame_order?: number[];
-    }
->;
-type CardAnimationPoints = Record<string, { x: number; y: number }> & {
-    origin: { x: number; y: number };
-    center: { x: number; y: number };
-}; /**
  * Native representation of GDevelop objects and scenes
  *
  * @remarks
@@ -126,4 +95,12 @@ export interface Resource {
     name: string;
     smoothed: boolean;
     userAdded: boolean;
+}
+
+export function validator(data_text: string): boolean {
+    return true;
+}
+
+export function extractor(data_text: string): Data {
+    return {};
 }

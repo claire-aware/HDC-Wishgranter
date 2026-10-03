@@ -45,7 +45,7 @@
     "scripts": {
         "prepare": "husky && cd node_modules/electron && node install.js",
         "postlint": "npm run pretty",
-        "lint": "eslint --cache --fix && stylelint *.css --fix",
+        "lint": "eslint --fix ./src && stylelint *.css --fix",
         "pretest": "npm run build",
         "test": "NODE_OPTIONS=--enable-source-maps mocha",
         "\n========== Building ==========": "",

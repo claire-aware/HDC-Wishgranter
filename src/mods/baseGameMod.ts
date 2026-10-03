@@ -1,7 +1,4 @@
-import { fixDataPaths } from "../fileFactory.ts";
-import type { Data } from "../jsons.d.ts";
-
-import { type Code0Adjuster, Mod, type ModMetadata } from "./mod.ts";
+import { type Code0Adjuster, Mod } from "./mod.ts";
 import type { LoadSequenceElement } from "../mod_menu/loadingBar.ts";
 
 export class BaseGameMod extends Mod {
@@ -47,37 +44,9 @@ export class BaseGameMod extends Mod {
     getCode(): string | undefined {
         return this.file_map.get("code0.js");
     }
-    getData(): Data {
-        if (this.cached_data) return this.cached_data as Data;
-        const file = this.file_map.get("data.js");
-        if (!file) throw new Error("Base game data not found.");
-        return (this.cached_data = fixDataPaths(
-            eval(
-                file
-                    .replace(/gdjs.projectData\s*=\s*/, "(")
-                    .replace(/;\s*gdjs.runtimeGameOptions\s*=\s*\{\};/, "") +
-                    ")",
-            ) as Data,
-            this.mod_directory_path,
-        ) as Data);
-    }
     getCode0Adjustments(): Promise<Code0Adjuster> {
         return new Promise((resolve) => {
             resolve((out) => out);
-        });
-    }
-    getMetadata(): ModMetadata {
-        if (this.cached_metadata) return this.cached_metadata;
-        const data = this.getData();
-        return (this.cached_metadata = {
-            name: data.properties.name,
-            description: data.properties.description,
-            version: data.properties.version,
-            icon_path: data.resources.resources.find(
-                (resource) =>
-                    resource.name ==
-                    data.properties.platformSpecificAssets["desktop-icon-512"],
-            )?.file,
         });
     }
 }

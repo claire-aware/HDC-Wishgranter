@@ -1,24 +1,7 @@
-import { fixDataPaths, mergeDeep } from "../fileFactory.ts";
-import type { Jsons } from "../jsons.d.ts";
-
-import type {
-    Cards,
-    CloudLabels,
-    Comms,
-    Credits,
-    Encounters,
-    LootListCard,
-    LootListUp,
-    SpUp,
-    TextLists,
-    Tooltips,
-    Tutorials,
-    UnlockCond,
-    Upgrades,
-} from "../hyperspace.jsons.d.ts";
-import type { Data, CardAnimations } from "../wishgranter.jsons.d.ts";
+import type { JsonManifest } from "../jsons.d.ts";
 import type { LoadSequenceElement } from "../mod_menu/loadingBar.ts";
 import type { RuntimeScene } from "../gdjs.js";
+import { json_manifest } from "../fileFactory.ts";
 
 export interface ModMetadata {
     name: string;
@@ -30,6 +13,13 @@ export interface ModMetadata {
 export class Mod {
     enabled = true;
     has_loaded = false;
+    private _valid = true;
+    protected set valid(new_valid: boolean) {
+        this._valid = new_valid;
+    }
+    public get valid() {
+        return this._valid;
+    }
     private _mod_directory_path = "";
     protected get mod_directory_path() {
         return this._mod_directory_path;
@@ -66,102 +56,88 @@ export class Mod {
                 )
             ).filter((file_to_load) => !this.file_map.has(file_to_load));
         }
-        return files_to_load.map((file_to_load) => {
-            return {
-                status_text: `Loading ${file_to_load}`,
-                function: async () => {
-                    this.file_map.set(
-                        file_to_load,
-                        await this.file_getter(file_to_load),
-                    );
-                },
-            };
-        });
+        return files_to_load
+            .map((file_to_load) => {
+                return {
+                    status_text: `Loading ${file_to_load}`,
+                    function: async () => {
+                        this.file_map.set(
+                            file_to_load,
+                            await this.file_getter(file_to_load),
+                        );
+                    },
+                } as LoadSequenceElement;
+            })
+            .concat(this.getLoadingSequenceToCacheJsons());
     }
-    protected cached_jsons = new Map<`${string}.json`, Jsons>();
-    getJson(json_name: `card_animations.json`): Partial<CardAnimations>;
-    getJson(json_name: `cards.json`): Partial<Cards>;
-    getJson(json_name: `comms.json`): Partial<Comms>;
-    getJson(json_name: `encounters.json`): Partial<Encounters>;
-    getJson(json_name: `loot_list_up.json`): Partial<LootListUp>;
-    getJson(json_name: `text_lists.json`): Partial<TextLists>;
-    getJson(json_name: `tutorials.json`): Partial<Tutorials>;
-    getJson(json_name: `upgrades.json`): Partial<Upgrades>;
-    getJson(json_name: `cloud_labels.json`): Partial<CloudLabels>;
-    getJson(json_name: `credits.json`): Partial<Credits>;
-    getJson(json_name: `loot_list_card.json`): Partial<LootListCard>;
-    getJson(json_name: `sp_up.json`): Partial<SpUp>;
-    getJson(json_name: `tooltips.json`): Partial<Tooltips>;
-    getJson(json_name: `unlock_cond.json`): Partial<UnlockCond>;
-    getJson(json_name: `data.json`): Partial<Data>;
-    getJson(json_name: `${string}.json`): Partial<Jsons>;
-    getJson(json_name: `${string}.json`): Partial<Jsons> {
-        return this.cached_jsons.getOrInsertComputed(json_name, (json_name) => {
-            const file = this.file_map.get(json_name);
-            if (!file) return {};
-            return JSON.parse(file) as Jsons;
-        });
+    private getLoadingSequenceToCacheJsons(): LoadSequenceElement[] {
+        return Object.getOwnPropertyNames(json_manifest).flatMap(
+            (output_json_name) =>
+                Object.getOwnPropertyNames(
+                    json_manifest[
+                        output_json_name as `${keyof JsonManifest}.json`
+                    ].sources,
+                )
+                    .filter(
+                        (source_name) =>
+                            source_name == "code0.js" ||
+                            this.file_map.has(source_name),
+                    )
+                    .flatMap((source_name) => [
+                        {
+                            status_text: `Validating ${source_name} for use as ${output_json_name} `,
+                            function: () => {
+                                this.valid &&=
+                                    json_manifest[
+                                        output_json_name as `${keyof JsonManifest}.json`
+                                    ].sources[
+                                        source_name as `${keyof JsonManifest}.json`
+                                    ]?.validator(
+                                        this.file_map.get(source_name) ?? "",
+                                    ) ?? true;
+                            },
+                        },
+                        {
+                            status_text: `Extracting ${output_json_name} from ${source_name}`,
+                            function: () => {
+                                this.cachedJsons ??= {};
+                                this.cachedJsons[
+                                    output_json_name as `${keyof JsonManifest}.json`
+                                ] = json_manifest[
+                                    output_json_name as `${keyof JsonManifest}.json`
+                                ].merger(
+                                    this.cachedJsons[
+                                        output_json_name as `${keyof JsonManifest}.json`
+                                    ],
+                                    json_manifest[
+                                        output_json_name as `${keyof JsonManifest}.json`
+                                    ].sources[
+                                        source_name as `${keyof JsonManifest}.json`
+                                    ]?.extractor(
+                                        this.file_map.get(source_name) ?? "",
+                                    ),
+                                );
+                            },
+                        },
+                    ]),
+        );
+    }
+    cachedJsons:
+        | {
+              [key in keyof JsonManifest as `${key}.json`]?: JsonManifest[key];
+          }
+        | undefined = undefined;
+    getCachedJson<JsonName extends keyof JsonManifest>(
+        json_name: `${JsonName}.json`,
+    ): JsonManifest[JsonName] {
+        if (!this.cachedJsons?.[json_name])
+            throw new ReferenceError(
+                "Cached jsons were accessed before jsons were cached",
+            );
+        return this.cachedJsons[json_name] as JsonManifest[JsonName];
     }
     getCode(): string | undefined {
         return undefined;
-    }
-    protected cached_data: Partial<Data> | undefined = undefined;
-    getData(): Partial<Data> {
-        if (this.cached_data) return this.cached_data;
-        let data = {};
-        const file = this.file_map.get("data.json");
-        if (file) data = mergeDeep(data, JSON.parse(file) as Partial<Data>);
-
-        return (this.cached_data = fixDataPaths(data, this.mod_directory_path));
-    }
-    protected cached_card_animations: Partial<CardAnimations> | undefined =
-        undefined;
-    getCardAnimations(): Partial<CardAnimations> {
-        if (this.cached_card_animations) return this.cached_card_animations;
-        const file = this.file_map.get("card_animations.json");
-        if (!file) return {};
-        try {
-            const card_animations = JSON.parse(file) as CardAnimations;
-            for (const card_id in card_animations) {
-                card_animations[card_id].sprites = card_animations[
-                    card_id
-                ].sprites.map((sprite_file_path) =>
-                    window.remote_replace.path.join(
-                        this.mod_directory_path,
-                        sprite_file_path,
-                    ),
-                );
-            }
-            return (this.cached_card_animations = card_animations);
-        } catch (e: unknown) {
-            console.error(e);
-            return {};
-        }
-    }
-    protected cached_metadata: ModMetadata | undefined = undefined;
-    getMetadata(): ModMetadata {
-        if (this.cached_metadata) return this.cached_metadata;
-        const file = this.file_map.get("metadata.json");
-        if (file == undefined)
-            return {
-                name: this.mod_directory_path.split(
-                    window.remote_replace.path.sep(),
-                )[
-                    this.mod_directory_path.split(
-                        window.remote_replace.path.sep(),
-                    ).length - 1
-                ],
-                icon_path: window.remote_replace.path.join(
-                    this.mod_directory_path,
-                    "icon.png",
-                ),
-            };
-        const metadata = JSON.parse(file) as ModMetadata;
-        metadata.icon_path = window.remote_replace.path.join(
-            this.mod_directory_path,
-            metadata.icon_path ?? "icon.png",
-        );
-        return (this.cached_metadata = metadata);
     }
     protected cached_code_0_adjustment: Code0Adjuster | undefined = undefined;
     async getCode0Adjustments(): Promise<Code0Adjuster> {

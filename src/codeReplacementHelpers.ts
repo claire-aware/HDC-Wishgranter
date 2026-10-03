@@ -1,30 +1,30 @@
 import type { RuntimeScene } from "./gdjs.js";
-import type { Data } from "./wishgranter.jsons.js";
+import type { Data } from "./json_factories/data.ts";
 
 export function simplifyEventList(
     event_list: (scene: RuntimeScene) => void,
 ): (scene: RuntimeScene) => void {
     return regexAdjustments(event_list, (function_text) => {
-        return (
-            function_text
-                /*.replaceAll(
-                                            /let ?isConditionTrue_(\d+) ?= ?false;\s*isConditionTrue_\1 ?= ?false;\s*{\s*isConditionTrue_\1 ?= ?([^]+?);\s*}\s*if ?\(isConditionTrue_\1\)/g,
-                                (_substring, ...groups: string[]) => {
-                                        return `if (${groups[1]})`;
-                                },
-                        )*/
-                .replaceAll(
-                    /runtimeScene\s*\.getScene\(\)\s*\.getVariables\(\)\s*\.getFromIndex\((\d+)\)/g,
-                    (_substring, ...groups: string[]) => {
-                        return `getSceneVariable(${groups[0]},runtimeScene)`;
-                    },
-                )
-                .replaceAll(
-                    /for ?\(\s*var i ?= ?0, ?len ?= ?gdjs\.CommandCode\.GD([\w_]+)Objects(\d+)\.length;\s*i ?< ?len;\s*\+\+i\s*\) ?{([^{]+?)}/g,
-                    (_substring, ...groups: string[]) =>
-                        `applyToObject(${groups[0].replaceAll(/_9595/, "_")},${groups[1]},(_object,i) => {${groups[2]}})`,
-                )
-        );
+        return function_text
+            .replaceAll(
+                /let ?isConditionTrue_(\d+) ?= ?false;\s*isConditionTrue_\1 ?= ?false;\s*{\s*isConditionTrue_\1 ?= ?([^]+?);\s*}\s*if ?\(isConditionTrue_\1\)/g,
+                (substring, ...groups: string[]) => {
+                    return groups[1].includes(`isConditionTrue_${groups[0]}`) ?
+                            substring
+                        :   `if (${groups[1]})`;
+                },
+            )
+            .replaceAll(
+                /runtimeScene\s*\.getScene\(\)\s*\.getVariables\(\)\s*\.getFromIndex\((\d+)\)/g,
+                (_substring, ...groups: string[]) => {
+                    return `getSceneVariable(${groups[0]},runtimeScene)`;
+                },
+            )
+            .replaceAll(
+                /for ?\(\s*var i ?= ?0, ?len ?= ?gdjs\.CommandCode\.GD([\w_]+)Objects(\d+)\.length;\s*i ?< ?len;\s*\+\+i\s*\) ?{([^{]+?)}/g,
+                (_substring, ...groups: string[]) =>
+                    `applyToObject(${groups[0].replaceAll(/_9595/, "_")},${groups[1]},(_object,i) => {${groups[2]}})`,
+            );
     });
 }
 
@@ -34,9 +34,9 @@ export function commentEventList(
 ): (scene: RuntimeScene) => void {
     return regexAdjustments(event_list, (function_text) => {
         return function_text.replaceAll(
-            /(?<=getSceneVariable\()\d+(?=\))/g,
+            /(?<=getSceneVariable\()\d+/g,
             (index) => {
-                return data.layouts[0].variables[Number.parseInt(index)].name;
+                return `"${data.layouts[0].variables[Number.parseInt(index)].name}"`;
             },
         );
     });

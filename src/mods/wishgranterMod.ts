@@ -5,15 +5,12 @@ import {
     commentEventList,
     simplifyEventList,
 } from "../codeReplacementHelpers.ts";
-import { getDataFromMods } from "../fileFactory.ts";
+import { getCachedJson } from "../fileFactory.ts";
 
 export class WishgranterMod extends Mod {
     constructor(enabled = true, mod_directory_path = ".") {
         super(enabled, mod_directory_path);
-        this.getJson = () => {
-            return {};
-        };
-        this.getData = () => {
+        this.getCachedJson = () => {
             return {};
         };
         this.load = () =>
@@ -62,7 +59,7 @@ function code0Adjustments(
 ): (scene: RuntimeScene) => void {
     adjustable = simplifyEventList(adjustable);
     if (!window.remote_replace.app.isPackaged())
-        adjustable = commentEventList(adjustable, getDataFromMods());
+        adjustable = commentEventList(adjustable, getCachedJson("data.json"));
     return replaceVersionText(adjustable);
 }
 

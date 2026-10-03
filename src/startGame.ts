@@ -1,12 +1,10 @@
-import type {
-    LoadSequenceElement,
-    LoadingBarElement,
-} from "./mod_menu/loadingBar.ts";
+import type { LoadingBarElement } from "./mod_menu/loadingBar.ts";
 import { loadWishgranter, unloadWishgranter } from "./loadWishgranter.ts";
 import {
-    getDataFromMods,
-    getCodeFromMods,
-    cacheCodeFromMods,
+    getCachedCode,
+    getCachedJson,
+    getLoadingSequenceToCacheCodeFromMods,
+    getLoadingSequenceToCacheJsons,
 } from "./fileFactory.ts";
 
 const loading_bar = document.getElementsByTagName(
@@ -16,9 +14,9 @@ const start_game_button = document.getElementById(
     "start-game-button",
 ) as HTMLButtonElement;
 
-async function baseStartGame() {
+function baseStartGame() {
     //Initialization
-    const gdgame = new gdjs.RuntimeGame(getDataFromMods(), {});
+    const gdgame = new gdjs.RuntimeGame(getCachedJson("data.json"), {});
 
     //Create a renderer
     gdgame.getRenderer().createStandardCanvas(document.body);
@@ -34,37 +32,40 @@ async function baseStartGame() {
         .getRenderer()
         .bindStandardEvents(gdgame.getInputManager(), window, document);
 
-    gdjs.CommandCode = await getCodeFromMods();
+    gdjs.CommandCode = getCachedCode();
 
     //Load all assets and start the game
-    gdgame.loadAllAssets(() => {
-        gdgame.startGameLoop();
-    });
+    gdgame
+        .loadAllAssets(() => {
+            gdgame.startGameLoop();
+        })
+        .catch((err: unknown) => {
+            console.error(err);
+            start_game_button.disabled = false;
+            start_game_button.textContent = `!Error!: ${String(err)}`;
+        });
+
+    return gdjs.LoadingScreenRenderer?.getLoadingElements() ?? [];
 }
 export async function startGame() {
     start_game_button.disabled = true;
     document.body.classList.add("game_loading");
     await loading_bar.runThroughLoadingSequence([
         {
-            status_text: "Loading Hyperspace Deck Command",
-            function: loadHyperspaceDeckCommand,
+            status_text: "Getting Jsons",
+            function: getLoadingSequenceToCacheJsons,
         },
-    ]);
-    document.body.classList.remove("game_loading");
-    document.body.classList.add("game_loaded");
-}
-
-function loadHyperspaceDeckCommand(): LoadSequenceElement[] {
-    return [
         {
             status_text: "Modifying Code",
-            function: cacheCodeFromMods,
+            function: getLoadingSequenceToCacheCodeFromMods,
         },
         {
             status_text: "Starting Game",
             function: baseStartGame,
-        } as LoadSequenceElement<[]>,
-    ].concat(gdjs.LoadingScreenRenderer?.getLoadingElements() ?? []);
+        },
+    ]);
+    document.body.classList.remove("game_loading");
+    document.body.classList.add("game_loaded");
 }
 
 export async function loadHyperspaceLocation(hyperspace_path: string) {

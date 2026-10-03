@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 
 import assert from "node:assert";
-import { getDataFromCardAnimations } from "./fileFactory.ts";
+import { getDataFromCardAnimations } from "./json_factories/card_animations.ts";
 
 describe("getDataFromCardAnimations", () => {
     it("should return nothing when no card animations exist", () => {
@@ -29,20 +29,20 @@ describe("getDataFromCardAnimations", () => {
         );
 
         assert(
-            actual.resources?.resources.find(
+            actual.resources.resources.find(
                 (resource) => resource.name == "my_sample_png.png",
             ),
             "sprite in resources",
         );
 
         assert(
-            (actual.layouts ?? [])[0].objects.find(
+            actual.layouts[0].objects.find(
                 (my_obj) => my_obj.name == "obj_unit_eh",
             ),
             "card portiat in objects",
         );
         assert(
-            (actual.layouts ?? [])[0].objects
+            actual.layouts[0].objects
                 .find((my_obj) => my_obj.name == "obj_unit_eh")
                 ?.animations.find(
                     (animation) => animation.name == "my_sample_card",
@@ -50,7 +50,7 @@ describe("getDataFromCardAnimations", () => {
             "card in animations",
         );
         assert(
-            (actual.layouts ?? [])[0].objects
+            actual.layouts[0].objects
                 .find((my_obj) => my_obj.name == "obj_unit_eh")
                 ?.animations.find(
                     (animation) => animation.name == "my_sample_card",
@@ -61,7 +61,7 @@ describe("getDataFromCardAnimations", () => {
             "Sprite in animation",
         );
         assert.deepStrictEqual(
-            (actual.layouts ?? [])[0].objects
+            actual.layouts[0].objects
                 .find((my_obj) => my_obj.name == "obj_unit_eh")
                 ?.animations.find(
                     (animation) => animation.name == "my_sample_card",
@@ -73,7 +73,7 @@ describe("getDataFromCardAnimations", () => {
             "Origin Set",
         );
         assert.deepStrictEqual(
-            (actual.layouts ?? [])[0].objects
+            actual.layouts[0].objects
                 .find((my_obj) => my_obj.name == "obj_unit_eh")
                 ?.animations.find(
                     (animation) => animation.name == "my_sample_card",
@@ -85,7 +85,7 @@ describe("getDataFromCardAnimations", () => {
             "Center Set",
         );
         assert(
-            (actual.layouts ?? [])[0].objects
+            actual.layouts[0].objects
                 .find((my_obj) => my_obj.name == "obj_unit_eh")
                 ?.animations.find(
                     (animation) => animation.name == "my_sample_card",
@@ -103,7 +103,7 @@ describe("getDataFromCardAnimations", () => {
             "Other point set",
         );
         assert.deepStrictEqual(
-            (actual.layouts ?? [])[0].objects
+            actual.layouts[0].objects
                 .find((my_obj) => my_obj.name == "obj_unit_eh")
                 ?.animations.find(
                     (animation) => animation.name == "my_sample_card",
@@ -115,13 +115,13 @@ describe("getDataFromCardAnimations", () => {
             "Collison Set",
         );
         assert(
-            (actual.layouts ?? [])[0].usedResources.find(
+            actual.layouts[0].usedResources.find(
                 (resource) => resource.name == "my_sample_png.png",
             ),
             "Sprite in layout usedResources",
         );
         assert(
-            actual.usedResources?.find(
+            actual.usedResources.find(
                 (used_resource) => used_resource.name == "my_sample_png.png",
             ),
             "Sprite in global usedResources",
@@ -152,32 +152,32 @@ describe("getDataFromCardAnimations", () => {
         );
 
         assert(
-            actual.resources?.resources.find(
+            actual.resources.resources.find(
                 (resource) => resource.name == "my_sample_png.png",
             ),
             "sprite in resources",
         );
         assert(
-            actual.resources?.resources.find(
+            actual.resources.resources.find(
                 (resource) => resource.name == "my_sample_png2.png",
             ),
             "second sprite in resources",
         );
         assert(
-            actual.resources?.resources.find(
+            actual.resources.resources.find(
                 (resource) => resource.name == "my_sample_png3.png",
             ),
             "third sprite in resources",
         );
 
         assert(
-            (actual.layouts ?? [])[0].objects.find(
+            actual.layouts[0].objects.find(
                 (my_obj) => my_obj.name == "obj_unit_eh",
             ),
             "card portiat in objects",
         );
         assert(
-            (actual.layouts ?? [])[0].objects
+            actual.layouts[0].objects
                 .find((my_obj) => my_obj.name == "obj_unit_eh")
                 ?.animations.find(
                     (animation) => animation.name == "my_sample_card",
@@ -185,7 +185,7 @@ describe("getDataFromCardAnimations", () => {
             "card in animations",
         );
         assert(
-            (actual.layouts ?? [])[0].objects
+            actual.layouts[0].objects
                 .find((my_obj) => my_obj.name == "obj_unit_eh")
                 ?.animations.find(
                     (animation) => animation.name == "my_sample_card",
@@ -196,7 +196,7 @@ describe("getDataFromCardAnimations", () => {
             "Sprite in animation",
         );
         assert(
-            (actual.layouts ?? [])[0].objects
+            actual.layouts[0].objects
                 .find((my_obj) => my_obj.name == "obj_unit_eh")
                 ?.animations.find(
                     (animation) => animation.name == "my_sample_card",
@@ -207,7 +207,7 @@ describe("getDataFromCardAnimations", () => {
             "second Sprite in animation",
         );
         assert(
-            (actual.layouts ?? [])[0].objects
+            actual.layouts[0].objects
                 .find((my_obj) => my_obj.name == "obj_unit_eh")
                 ?.animations.find(
                     (animation) => animation.name == "my_sample_card",
@@ -218,7 +218,7 @@ describe("getDataFromCardAnimations", () => {
             "third Sprite in animation",
         );
         assert.equal(
-            (actual.layouts ?? [])[0].objects
+            actual.layouts[0].objects
                 .find((my_obj) => my_obj.name == "obj_unit_eh")
                 ?.animations.find(
                     (animation) => animation.name == "my_sample_card",
@@ -226,7 +226,7 @@ describe("getDataFromCardAnimations", () => {
             9,
             "sprites shuffled combinatorically",
         );
-        for (const animation_frame of (actual.layouts ?? [])[0].objects
+        for (const animation_frame of actual.layouts[0].objects
             .find((my_obj) => my_obj.name == "obj_unit_eh")
             ?.animations.find((animation) => animation.name == "my_sample_card")
             ?.directions[0].sprites ?? []) {
@@ -257,37 +257,37 @@ describe("getDataFromCardAnimations", () => {
             );
         }
         assert(
-            (actual.layouts ?? [])[0].usedResources.find(
+            actual.layouts[0].usedResources.find(
                 (resource) => resource.name == "my_sample_png.png",
             ),
             "Sprite in layout usedResources",
         );
         assert(
-            (actual.layouts ?? [])[0].usedResources.find(
+            actual.layouts[0].usedResources.find(
                 (resource) => resource.name == "my_sample_png2.png",
             ),
             "second Sprite in layout usedResources",
         );
         assert(
-            (actual.layouts ?? [])[0].usedResources.find(
+            actual.layouts[0].usedResources.find(
                 (resource) => resource.name == "my_sample_png3.png",
             ),
             "third Sprite in layout usedResources",
         );
         assert(
-            actual.usedResources?.find(
+            actual.usedResources.find(
                 (used_resource) => used_resource.name == "my_sample_png.png",
             ),
             "Sprite in global usedResources",
         );
         assert(
-            actual.usedResources?.find(
+            actual.usedResources.find(
                 (used_resource) => used_resource.name == "my_sample_png2.png",
             ),
             "second Sprite in global usedResources",
         );
         assert(
-            actual.usedResources?.find(
+            actual.usedResources.find(
                 (used_resource) => used_resource.name == "my_sample_png3.png",
             ),
             "third Sprite in global usedResources",
@@ -320,7 +320,7 @@ describe("getDataFromCardAnimations", () => {
         );
         frame_order.forEach((sprite_index, frame_index) => {
             assert.equal(
-                ((actual.layouts ?? [])[0].objects
+                (actual.layouts[0].objects
                     .find((my_obj) => my_obj.name == "obj_unit_eh")
                     ?.animations.find(
                         (animation) => animation.name == "my_sample_card",

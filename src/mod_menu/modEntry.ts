@@ -1,25 +1,8 @@
 import { WishgranterMod } from "../mods/wishgranterMod.ts";
 import { BaseGameMod } from "../mods/baseGameMod.ts";
 import { type Code0Adjuster, Mod } from "../mods/mod.ts";
-import type {
-    BaseGameJsons as Jsons,
-    Cards,
-    CloudLabels,
-    Comms,
-    Credits,
-    Encounters,
-    LootListCard,
-    LootListUp,
-    SpUp,
-    TextLists,
-    Tooltips,
-    Tutorials,
-    UnlockCond,
-    Upgrades,
-} from "../hyperspace.jsons.d.ts";
-import type { Data } from "../wishgranter.jsons.js";
-import type { CardAnimations } from "../wishgranter.jsons.js";
 import type { LoadingBarElement } from "./loadingBar.ts";
+import type { JsonManifest } from "../jsons.js";
 
 const mod_entry_template = document.getElementsByTagName("template")[0];
 
@@ -123,7 +106,7 @@ class ModEntry extends HTMLElement {
         await loadingBar.runThroughLoadingSequence(await this.mod.load());
         loadingBar.style.display = "none";
 
-        const metadata = this.mod.getMetadata();
+        const metadata = this.mod.getCachedJson("metadata.json");
         const name_element = this.shadow.getElementById("name");
         if (name_element) name_element.textContent = metadata.name;
         const description_element = this.shadow.getElementById("description");
@@ -137,30 +120,16 @@ class ModEntry extends HTMLElement {
         ) as HTMLImageElement | null;
         if (icon_element) icon_element.src = metadata.icon_path ?? "";
     }
-    getJson(json_name: `card_animations.json`): Partial<CardAnimations>;
-    getJson(json_name: `cards.json`): Partial<Cards>;
-    getJson(json_name: `comms.json`): Partial<Comms>;
-    getJson(json_name: `encounters.json`): Partial<Encounters>;
-    getJson(json_name: `loot_list_up.json`): Partial<LootListUp>;
-    getJson(json_name: `text_lists.json`): Partial<TextLists>;
-    getJson(json_name: `tutorials.json`): Partial<Tutorials>;
-    getJson(json_name: `upgrades.json`): Partial<Upgrades>;
-    getJson(json_name: `cloud_labels.json`): Partial<CloudLabels>;
-    getJson(json_name: `credits.json`): Partial<Credits>;
-    getJson(json_name: `loot_list_card.json`): Partial<LootListCard>;
-    getJson(json_name: `sp_up.json`): Partial<SpUp>;
-    getJson(json_name: `tooltips.json`): Partial<Tooltips>;
-    getJson(json_name: `unlock_cond.json`): Partial<UnlockCond>;
-    getJson(json_name: `data.json`): Partial<Data>;
-    getJson(josn_name: `${string}.json`): Partial<Jsons>;
-    getJson(josn_name: `${string}.json`): Partial<Jsons> {
-        return this.mod?.getJson(josn_name) ?? {};
+    getJson<JsonName extends keyof JsonManifest>(
+        json_name: `${JsonName}.json`,
+    ): Partial<JsonManifest[JsonName]> {
+        return this.mod?.getCachedJson(json_name) ?? {};
     }
-    getName() {
-        return this.mod?.getMetadata().name ?? "Unknown Mod";
+    getCachedJsons(): Partial<JsonManifest[keyof JsonManifest]> {
+        return this.mod?.cachedJsons ?? {};
     }
-    getData() {
-        return this.mod?.getData() ?? {};
+    getName(): string {
+        return this.mod?.getCachedJson("metadata.json").name ?? "Unknown Mod";
     }
     getCode() {
         return this.mod?.getCode() ?? "";
@@ -171,9 +140,6 @@ class ModEntry extends HTMLElement {
                 resolve((out) => out);
             });
         return this.mod.getCode0Adjustments();
-    }
-    getCardAnimations() {
-        return this.mod?.getCardAnimations() ?? {};
     }
     hasMod(comparison_mod_path: string) {
         return this.mod?.hasModPath(comparison_mod_path) ?? false;
