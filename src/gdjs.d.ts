@@ -1,6 +1,6 @@
-import type { Resource } from "./wishgranter.jsons.js";
 import type { Data } from "./wishgranter.jsons.js";
 import type { LoadSequenceElement } from "./mod_menu/loadingBar.ts";
+import type { Resource } from "./json_factories/data.ts";
 
 declare global {
     var gdjs: gdjs;
@@ -95,7 +95,10 @@ export interface RuntimeGame {
         bindStandardEvents: (a: unknown, b: unknown, c: unknown) => void;
     };
     getInputManager: () => unknown;
-    loadAllAssets: (callback: () => void) => void;
+    loadAllAssets: (
+        callback: () => void,
+        progressCallback?: (progress: float) => void,
+    ) => Promise<void>;
     startGameLoop: () => void;
 }
 

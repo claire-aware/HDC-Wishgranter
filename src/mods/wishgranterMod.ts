@@ -1,20 +1,18 @@
-import { type Code0Adjuster, Mod, type ModMetadata } from "./mod.ts";
+import { type Code0Adjuster, Mod } from "./mod.ts";
 import type { RuntimeScene } from "../gdjs.js";
 import {
     applyToObject,
     commentEventList,
     simplifyEventList,
 } from "../codeReplacementHelpers.ts";
-import { getDataFromMods } from "../fileFactory.ts";
+import { getCachedJson, json_manifest } from "../fileFactory.ts";
+import type { ModMetadata } from "../json_factories/metadata.ts";
 
 export class WishgranterMod extends Mod {
     constructor(enabled = true, mod_directory_path = ".") {
         super(enabled, mod_directory_path);
-        this.getJson = () => {
-            return {};
-        };
-        this.getData = () => {
-            return {};
+        this.getCachedJson = (json_name) => {
+            return json_manifest[json_name].reasonable_default;
         };
         this.load = () =>
             new Promise((resolve) => {
@@ -31,7 +29,8 @@ export class WishgranterMod extends Mod {
         return {
             name: "Wishgranter Utilities",
             version: "0.0.3",
-            description: "Modloader for Sleeper Game's Hyperspace Deck Command",
+            description:
+                "Mod loader for Sleeper Game's Hyperspace Deck Command",
             icon_path: "Wishgranter_Icon.png",
         };
     }
@@ -62,7 +61,7 @@ function code0Adjustments(
 ): (scene: RuntimeScene) => void {
     adjustable = simplifyEventList(adjustable);
     if (!window.remote_replace.app.isPackaged())
-        adjustable = commentEventList(adjustable, getDataFromMods());
+        adjustable = commentEventList(adjustable, getCachedJson("data"));
     return replaceVersionText(adjustable);
 }
 

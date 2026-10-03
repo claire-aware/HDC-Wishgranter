@@ -1,417 +1,505 @@
-import type { Jsons } from "./jsons.d.ts";
-import type {
-    Cards,
-    CloudLabels,
-    Comms,
-    Credits,
-    Encounters,
-    LootListCard,
-    LootListUp,
-    SpUp,
-    TextLists,
-    Tooltips,
-    Tutorials,
-    UnlockCond,
-    Upgrades,
-} from "./hyperspace.jsons.d.ts";
-import type { AnimationFrame } from "./wishgranter.jsons.d.ts";
-import type { Data } from "./wishgranter.jsons.d.ts";
-import type { CardAnimations } from "./wishgranter.jsons.d.ts";
 import type { ModEntry } from "./mod_menu/modEntry.ts";
-import type { RuntimeScene } from "./gdjs.js";
-import type { Code0Adjuster } from "./mods/mod.ts";
 import type { LoadSequenceElement } from "./mod_menu/loadingBar.ts";
+import type { Code0Adjuster } from "./mods/mod.ts";
+import type { RuntimeScene } from "./gdjs.js";
+import {
+    type CardAnimations,
+    manifest as card_animations_manifest,
+} from "./json_factories/card_animations.ts";
+import {
+    type Barks,
+    manifest as comms_manifest,
+} from "./json_factories/comms.ts";
+import {
+    type Cards,
+    manifest as cards_manifest,
+} from "./json_factories/cards.ts";
+import {
+    type Encounters,
+    manifest as encounters_manifest,
+} from "./json_factories/encounters.ts";
+import {
+    type LootListUp,
+    manifest as loot_list_up_manifest,
+} from "./json_factories/loot_list_up.ts";
+import {
+    type TextLists,
+    manifest as text_lists_manifest,
+} from "./json_factories/text_lists.ts";
+import {
+    type Upgrades,
+    manifest as upgrades_manifest,
+} from "./json_factories/upgrades.ts";
+import {
+    type LootListCard,
+    manifest as loot_list_card_manifest,
+} from "./json_factories/loot_list_card.ts";
+import {
+    type BaselineUpgrades,
+    manifest as sp_up_manifest,
+} from "./json_factories/sp_up.ts";
+import {
+    type UnlockCond,
+    manifest as unlock_cond_manifest,
+} from "./json_factories/unlock_cond.ts";
+import { type Data, manifest as data_manifest } from "./json_factories/data.ts";
+import {
+    type ModMetadata,
+    manifest as metadata_manifest,
+} from "./json_factories/metadata.ts";
+import {
+    type Tutorials,
+    manifest as tutorials_manifest,
+} from "./json_factories/tutorials.ts";
+import {
+    type CloudLabels,
+    manifest as cloud_labels_manifest,
+} from "./json_factories/cloud_labels.ts";
+import {
+    type Credits,
+    manifest as credits_manifest,
+} from "./json_factories/credits.ts";
+import {
+    type Tooltips,
+    manifest as tooltips_manifest,
+} from "./json_factories/tooltips.ts";
+import {
+    type Factions,
+    manifest as factions_manifest,
+} from "./json_factories/factions.ts";
 
-const cachedJsons = new Map<`${string}.json`, Jsons>();
-export function getJsonFromMods(
-    json_name: `card_animations.json`,
-): CardAnimations;
-export function getJsonFromMods(json_name: `cards.json`): Cards;
-export function getJsonFromMods(json_name: `comms.json`): Comms;
-export function getJsonFromMods(json_name: `encounters.json`): Encounters;
-export function getJsonFromMods(json_name: `loot_list_up.json`): LootListUp;
-export function getJsonFromMods(json_name: `text_lists.json`): TextLists;
-export function getJsonFromMods(json_name: `tutorials.json`): Tutorials;
-export function getJsonFromMods(json_name: `upgrades.json`): Upgrades;
-export function getJsonFromMods(json_name: `cloud_labels.json`): CloudLabels;
-export function getJsonFromMods(json_name: `credits.json`): Credits;
-export function getJsonFromMods(json_name: `loot_list_card.json`): LootListCard;
-export function getJsonFromMods(json_name: `sp_up.json`): SpUp;
-export function getJsonFromMods(json_name: `tooltips.json`): Tooltips;
-export function getJsonFromMods(json_name: `unlock_cond.json`): UnlockCond;
-export function getJsonFromMods(json_name: `data.json`): Data;
-export function getJsonFromMods(json_name: `${string}.json`): Jsons;
-export function getJsonFromMods(json_name: `${string}.json`): Jsons {
-    return cachedJsons.getOrInsertComputed(
-        json_name,
-        (json_name) =>
-            (
-                Array.from(
-                    document.getElementById("modlist")?.children ?? [],
-                ) as ModEntry[]
-            )
-                .filter((mod_entry) => mod_entry.enabled)
-                .map((mod_entry) => mod_entry.getJson(json_name))
-                .reduce((file_contents: object, new_file_contents: object) =>
-                    mergeDeep(file_contents, new_file_contents),
-                ) as Jsons,
-    );
+export const optional = Symbol("optional");
+export const array = Symbol("array");
+export const value = Symbol("value");
+export const default_value = Symbol("default_value");
+export const records = Symbol("record");
+export const record = Symbol("record");
+export const key = Symbol("key");
+export const validator = Symbol("validator");
+
+export interface JsonManifest {
+    comms: Barks;
+    cards: Cards;
+    encounters: Encounters;
+    loot_list_up: LootListUp;
+    text_lists: TextLists;
+    tutorials: Tutorials;
+    upgrades: Upgrades;
+    cloud_labels: CloudLabels;
+    credits: Credits;
+    loot_list_card: LootListCard;
+    sp_up: BaselineUpgrades;
+    tooltips: Tooltips;
+    unlock_cond: UnlockCond;
+    data: Data;
+    card_animations: CardAnimations;
+    metadata: ModMetadata;
+    factions: Factions;
 }
 
-let cachedCode0: typeof gdjs.CommandCode | undefined = undefined;
-export async function getCodeFromMods(): Promise<typeof gdjs.CommandCode> {
-    return (cachedCode0 ??= await (
-        Array.from(
-            document.getElementById("modlist")?.children ?? [],
-        ) as ModEntry[]
-    )
-        .filter((mod_entry) => mod_entry.enabled)
-        .map((mod_entry) => mod_entry.getCode0Adjustments())
-        .reduce(
-            async (
-                command_code_promise: Promise<typeof gdjs.CommandCode>,
-                adjustment: Promise<Code0Adjuster>,
-            ): Promise<typeof gdjs.CommandCode> => {
-                const command_code: typeof gdjs.CommandCode =
-                    await command_code_promise;
-                for (const name in command_code) {
-                    if (!name.startsWith("eventsList")) continue;
-                    command_code[name as `eventsList${number}`] = (
-                        await adjustment
-                    )(command_code[name as `eventsList${number}`]) as (
-                        runtime_scene: RuntimeScene,
-                    ) => void;
-                }
-                return command_code;
-            },
-            new Promise<typeof gdjs.CommandCode>((resolve) => {
-                eval(
-                    (
-                        Array.from(
-                            document.getElementById("modlist")?.children ?? [],
-                        ) as ModEntry[]
-                    )
-                        .map((mod_entry) => mod_entry.getCode())
-                        .reduce((new_code, code) => code + new_code),
-                );
-                resolve(gdjs.CommandCode);
-            }),
-        ));
-}
-export function cacheCodeFromMods(): LoadSequenceElement[] {
-    return (
-        [
-            {
-                status_text: "Getting code from base game",
-                function: () => {
-                    eval(
-                        (
-                            Array.from(
-                                document.getElementById("modlist")?.children ??
-                                    [],
-                            ) as ModEntry[]
-                        )
-                            .map((mod_entry) => mod_entry.getCode())
-                            .reduce((new_code, code) => code + new_code),
-                    );
-                    cachedCode0 = gdjs.CommandCode;
-                },
-            },
-        ] as LoadSequenceElement[]
-    ).concat(
-        (
-            Array.from(
-                document.getElementById("modlist")?.children ?? [],
-            ) as ModEntry[]
-        )
-            .filter((mod_entry) => mod_entry.enabled)
-            .map((mod_entry) => {
-                return {
-                    status_text: `Adjusting for ${mod_entry.getName()}`,
-                    function: async () => {
-                        for (const name in cachedCode0) {
-                            if (!name.startsWith("eventsList")) continue;
-                            cachedCode0[name as `eventsList${number}`] = (
-                                await mod_entry.getCode0Adjustments()
-                            )(cachedCode0[name as `eventsList${number}`]) as (
-                                runtime_scene: RuntimeScene,
-                            ) => void;
-                        }
-                    },
+export type JsonProcessingTemplate =
+    | {
+          [key]: RegExp | ((id: string) => boolean);
+          [value]: JsonProcessingTemplateWithoutDefaults;
+      }
+    | {
+          [key]: RegExp | ((id: string) => boolean);
+          [value]: JsonProcessingTemplateWithoutDefaults;
+      }[]
+    | ({
+          [records]: {
+              [key]: RegExp | ((id: string) => boolean);
+              [value]: JsonProcessingTemplateWithoutDefaults;
+          }[];
+      } & { [key: string]: JsonProcessingTemplate })
+    | ({
+          [record]: {
+              [key]: RegExp | ((id: string) => boolean);
+              [value]: JsonProcessingTemplateWithoutDefaults;
+          };
+      } & { [key: string]: JsonProcessingTemplate })
+    | { [key: string]: JsonProcessingTemplate }
+    | { [array]: JsonProcessingTemplateWithoutDefaults }
+    | { [optional]: JsonProcessingTemplateWithoutDefaults }
+    | {
+          [validator]: RegExp | ((id: string) => boolean);
+          [default_value]: string | number;
+      };
+type JsonProcessingTemplateWithoutDefaults =
+    | {
+          [key]: RegExp | ((id: string) => boolean);
+          [value]: JsonProcessingTemplateWithoutDefaults;
+      }
+    | {
+          [key]: RegExp | ((id: string) => boolean);
+          [value]: JsonProcessingTemplateWithoutDefaults;
+      }[]
+    | ((
+          | {
+                [records]: {
+                    [key]: RegExp | ((id: string) => boolean);
+                    [value]: JsonProcessingTemplateWithoutDefaults;
+                }[];
+            }
+          | {
+                [record]: {
+                    [key]: RegExp | ((id: string) => boolean);
+                    [value]: JsonProcessingTemplateWithoutDefaults;
                 };
-            }) as LoadSequenceElement[],
+            }
+          | object
+      ) & { [key: string]: JsonProcessingTemplateWithoutDefaults })
+    | { [array]: JsonProcessingTemplateWithoutDefaults }
+    | { [optional]: JsonProcessingTemplateWithoutDefaults }
+    | RegExp
+    | ((id: string) => boolean);
+
+type JsonObjectFromTemplate<
+    Template extends
+        | JsonProcessingTemplate
+        | JsonProcessingTemplateWithoutDefaults,
+> =
+    Template extends (
+        {
+            [validator]: (id: string) => boolean;
+            [default_value]: string | number;
+        }
+    ) ?
+        Template[typeof default_value]
+    : Template extends (id: string) => boolean ? string | number
+    : Template extends { [array]: JsonProcessingTemplateWithoutDefaults } ?
+        JsonObjectFromTemplate<Template[typeof array]>[]
+    : Template extends { [optional]: JsonProcessingTemplateWithoutDefaults } ?
+        JsonObjectFromTemplate<Template[typeof optional]> | undefined
+    : Template extends (
+        {
+            [key]: (id: string) => boolean;
+            [value]: JsonProcessingTemplateWithoutDefaults;
+        }
+    ) ?
+        Record<string, Template[typeof value]>
+    : Template extends (
+        {
+            [key]: (id: string) => boolean;
+            [value]: JsonProcessingTemplateWithoutDefaults;
+        }[]
+    ) ?
+        Record<string, Template[number][typeof value]>
+    : Template extends (
+        {
+            [record]: {
+                [key]: (id: string) => boolean;
+                [value]: JsonProcessingTemplateWithoutDefaults;
+            };
+        }
+    ) ?
+        Record<string, Template[typeof record][typeof value]> & {
+            [Key in Exclude<
+                typeof record,
+                keyof Template
+            >]: JsonObjectFromTemplate<Template[Key]>;
+        }
+    : Template extends (
+        {
+            [records]: {
+                [key]: (id: string) => boolean;
+                [value]: JsonProcessingTemplateWithoutDefaults;
+            }[];
+        }
+    ) ?
+        Record<string, Template[typeof records][number][typeof value]> & {
+            [Key in Exclude<
+                typeof records,
+                keyof Template
+            >]: JsonObjectFromTemplate<Template[Key]>;
+        }
+    : Template extends Record<string, JsonProcessingTemplateWithoutDefaults> ?
+        { [Key in keyof Template]: JsonObjectFromTemplate<Template[Key]> }
+    :   never;
+
+export function isKeyOf(
+    json_name: keyof JsonManifest,
+    subpath_or_format?:
+        | string
+        | JsonProcessingTemplate
+        | JsonProcessingTemplateWithoutDefaults,
+): (id: string) => boolean;
+export function isKeyOf(
+    json_name: keyof JsonManifest,
+    subpath: string,
+    format: JsonProcessingTemplate | JsonProcessingTemplateWithoutDefaults,
+): (id: string) => boolean;
+export function isKeyOf(
+    json_name: keyof JsonManifest,
+    subpath_or_of_type?:
+        | string
+        | JsonProcessingTemplate
+        | JsonProcessingTemplateWithoutDefaults,
+    of_type?: JsonProcessingTemplate | JsonProcessingTemplateWithoutDefaults,
+): (id: string) => boolean {
+    if (!cachedJsons[json_name]) return () => false;
+    const json = cachedJsons[json_name];
+    if (!subpath_or_of_type) return (id) => Object.hasOwn(json, id);
+    if (!(typeof subpath_or_of_type == "string"))
+        return (id) =>
+            Object.hasOwn(json, id) &&
+            validateObjectFromTemplate(
+                json[id as keyof typeof json],
+                subpath_or_of_type,
+            );
+    const object_with_key = subpath_or_of_type
+        .split("/")
+        .reduce((result, key) => result[key as keyof typeof result], json);
+    return (id) =>
+        Object.hasOwn(object_with_key, id) &&
+        (!of_type ||
+            validateObjectFromTemplate(
+                object_with_key[id as keyof typeof object_with_key],
+                of_type,
+            ));
+}
+
+export type JsonProcessingManifest = {
+    [key in keyof JsonManifest]: {
+        prerequisites?: (keyof JsonManifest)[];
+        reasonable_default: JsonManifest[key];
+        sources: {
+            [SubKey in keyof JsonManifest]?: {
+                validator: (test_string: string) => boolean;
+                extractor: (test_string: string) => JsonManifest[key];
+            };
+        } & {
+            "code0.js"?: {
+                extractor: (
+                    event_list: (runtime_scene: RuntimeScene) => void,
+                ) => JsonManifest[key];
+            };
+        };
+        merger: (
+            a: JsonManifest[key],
+            b: Partial<JsonManifest[key]>,
+        ) => JsonManifest[key];
+        application?: JsonProcessingApplication<JsonManifest[key]>;
+    };
+};
+
+type JsonProcessingApplication<
+    Target extends JsonManifest[keyof JsonManifest],
+    AdditionalSources extends (keyof JsonManifest)[] = (keyof JsonManifest)[],
+> = {
+    [SubKey in keyof JsonManifest]?:
+        | ((source: Target) => JsonManifest[SubKey])
+        | {
+              additional_sources: AdditionalSources;
+              applicator: (
+                  source: Target,
+                  ...additional_sources: JsonManifest[AdditionalSources[number]][]
+              ) => JsonManifest[SubKey];
+          };
+} & {
+    code0?:
+        | ((source: Target) => Code0Adjuster)
+        | {
+              additional_sources: `${keyof JsonManifest}.json`[];
+              applicator: (
+                  source: Target,
+                  ...additional_sources: JsonManifest[keyof JsonManifest][]
+              ) => Code0Adjuster;
+          };
+};
+
+function getReasonableDefault<ListTemplate extends JsonProcessingTemplate>(
+    list_template: ListTemplate,
+): JsonObjectFromTemplate<ListTemplate> {
+    // Unpack collections
+    if (Object.hasOwn(list_template, optional)) {
+        return undefined as JsonObjectFromTemplate<ListTemplate>;
+    }
+    if (Object.hasOwn(list_template, array)) {
+        return [] as unknown as JsonObjectFromTemplate<ListTemplate>;
+    }
+
+    if (Object.hasOwn(list_template, default_value)) {
+        return (list_template as { [default_value]: string })[
+            default_value
+        ] as JsonObjectFromTemplate<ListTemplate>;
+    }
+
+    return Object.fromEntries(
+        Object.getOwnPropertyNames(list_template)
+            .filter(
+                (property_name) =>
+                    !(
+                        optional in
+                        list_template[property_name as keyof unknown]
+                    ),
+            )
+            .map((property_name) => [
+                property_name,
+                getReasonableDefault(
+                    list_template[property_name as keyof unknown],
+                ),
+            ]),
+    ) as unknown as JsonObjectFromTemplate<ListTemplate>;
+}
+
+export function getManifestEntry<
+    Key extends keyof JsonManifest,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+    ListTemplate extends JsonProcessingTemplate,
+>(json_name: Key, list_template: ListTemplate): JsonProcessingManifest[Key] {
+    return {
+        reasonable_default: getReasonableDefault(
+            list_template,
+        ) as JsonManifest[Key],
+        sources: {
+            [json_name]: {
+                validator: getManifestValidator(list_template),
+                extractor: getManifestExtractor(list_template),
+            },
+        },
+        merger: mergeDeep,
+    } as JsonProcessingManifest[Key];
+}
+
+function getManifestValidator(
+    list_template: JsonProcessingTemplate,
+): (test_string: string) => boolean {
+    return (json_text) => {
+        try {
+            const parsed_json = JSON.parse(json_text) as unknown;
+            return validateObjectFromTemplate(parsed_json, list_template);
+        } catch (err: unknown) {
+            console.warn("Invalid Json:", err);
+            return false;
+        }
+    };
+}
+
+function validateObjectFromTemplate(
+    object_to_validate: unknown,
+    list_template:
+        | JsonProcessingTemplate
+        | JsonProcessingTemplateWithoutDefaults,
+): boolean {
+    {
+        // Remove syntactic sugar
+        if (Array.isArray(list_template)) {
+            return validateObjectFromTemplate(object_to_validate, {
+                [records]: list_template,
+            });
+        }
+        if (record in list_template) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { [record]: _omitted, ...exceptions } = list_template;
+            return validateObjectFromTemplate(object_to_validate, {
+                [records]: [list_template[record]],
+                ...exceptions,
+            });
+        }
+        if (key in list_template) {
+            return validateObjectFromTemplate(object_to_validate, {
+                [records]: [list_template],
+            });
+        }
+    }
+
+    {
+        // Unpack collections
+        if (optional in list_template) {
+            return (
+                object_to_validate == undefined ||
+                validateObjectFromTemplate(
+                    object_to_validate,
+                    list_template[optional],
+                )
+            );
+        }
+        if (array in list_template) {
+            if (!Array.isArray(object_to_validate)) return false;
+            return object_to_validate.every((element: unknown) =>
+                validateObjectFromTemplate(element, list_template[array]),
+            );
+        }
+        if (records in list_template) {
+            return (
+                Object.getOwnPropertyNames(object_to_validate).every(
+                    (property_name) => {
+                        if (property_name in list_template)
+                            return validateObjectFromTemplate(
+                                (object_to_validate as Record<string, unknown>)[
+                                    property_name as keyof unknown
+                                ],
+
+                                list_template[property_name as keyof unknown],
+                            );
+                        else
+                            return list_template[records].some(
+                                (record) =>
+                                    (typeof record[key] == "function" ?
+                                        record[key](property_name)
+                                    :   record[key].test(property_name)) &&
+                                    validateObjectFromTemplate(
+                                        (
+                                            object_to_validate as Record<
+                                                string,
+                                                unknown
+                                            >
+                                        )[property_name],
+                                        record[value],
+                                    ),
+                            );
+                    },
+                ) &&
+                Object.getOwnPropertyNames(list_template)
+
+                    .filter(
+                        (property_name) =>
+                            !(
+                                optional in
+                                list_template[property_name as keyof unknown]
+                            ),
+                    )
+                    .every(
+                        (property_name) =>
+                            (object_to_validate as Record<string, unknown>)[
+                                property_name
+                            ] != undefined,
+                    )
+            );
+        }
+    }
+
+    if (validator in list_template) {
+        return (
+            list_template as { [validator]: (id_or_object: string) => boolean }
+        )[validator](object_to_validate as string);
+    }
+
+    return Object.getOwnPropertyNames(list_template).every(
+        (property_name) =>
+            (property_name in (object_to_validate as Record<string, unknown>) ||
+                Object.hasOwn(
+                    list_template[property_name as keyof unknown],
+                    "optional",
+                )) &&
+            validateObjectFromTemplate(
+                (object_to_validate as Record<string, unknown>)[property_name],
+                list_template[property_name as keyof unknown],
+            ),
     );
 }
 
-let cachedData: Data | undefined = undefined;
-export function getDataFromMods(): Data {
-    return (cachedData ??= mergeDeep(
-        (
-            Array.from(
-                document.getElementById("modlist")?.children ?? [],
-            ) as ModEntry[]
-        )
-            .filter((mod_entry) => mod_entry.enabled)
-            .map((mod_entry) => mod_entry.getData())
-            .reduce(
-                (
-                    file_contents: Partial<Data>,
-                    new_file_contents: Partial<Data>,
-                ) => mergeDeep(file_contents, new_file_contents),
-            ),
-        getDataFromCardAnimations(
-            getCardAnimationsFromMods(),
-            getJsonFromMods("cards.json"),
-        ),
-    ) as Data);
-}
-let cachedCardAnimations: CardAnimations | undefined = undefined;
-function getCardAnimationsFromMods(): CardAnimations {
-    return (cachedCardAnimations ??= (
-        Array.from(
-            document.getElementById("modlist")?.children ?? [],
-        ) as ModEntry[]
-    )
-        .filter((mod_entry) => mod_entry.enabled)
-        .map((mod_entry) => mod_entry.getCardAnimations())
-        .reduce(
-            (
-                file_contents: Partial<CardAnimations>,
-                new_file_contents: Partial<CardAnimations>,
-            ) => mergeDeep(file_contents, new_file_contents),
-        ) as CardAnimations);
-}
-export function getDataFromCardAnimations(
-    animations: CardAnimations,
-    cards: Record<
-        keyof CardAnimations,
-        { por_obj: `obj_${"unit" | "ab"}_${string}` }
-    >,
-): Partial<Data> {
-    if (
-        Object.getOwnPropertyNames(animations).length <= 0 ||
-        Object.getOwnPropertyNames(cards).length <= 0
-    )
-        return {};
-    return {
-        resources: {
-            resources: [
-                ...Object.getOwnPropertyNames(animations)
-                    .flatMap((card_id) => animations[card_id].sprites)
-                    .map((sprite_file_path) => {
-                        return {
-                            file: sprite_file_path,
-                            name: sprite_file_path,
-                            kind: "image",
-                            smoothed: false,
-                            userAdded: true,
-                        };
-                    }),
-            ],
-        },
-        layouts: [
-            {
-                name: "Command",
-                objects: [
-                    ...Object.getOwnPropertyNames(animations)
-                        .reduce(
-                            (obj_set, card_id) =>
-                                obj_set.add(cards[card_id].por_obj),
-                            new Set<string>(),
-                        )
-                        .keys()
-                        .map(getAnimationsOfPorObj(animations, cards)),
-                ],
-                variables: [],
-                usedResources: [
-                    ...Object.getOwnPropertyNames(animations)
-                        .flatMap((card_id) => animations[card_id].sprites)
-                        .map((sprite_file_path) => {
-                            return {
-                                name: sprite_file_path,
-                            };
-                        }),
-                ],
-            },
-        ],
-        usedResources: [
-            ...Object.getOwnPropertyNames(animations)
-                .flatMap((card_id) => animations[card_id].sprites)
-                .map((sprite_file_path) => {
-                    return {
-                        name: sprite_file_path,
-                    };
-                }),
-        ],
+function getManifestExtractor<ListTemplate extends JsonProcessingTemplate>(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _list_template: ListTemplate,
+): (json: string) => JsonObjectFromTemplate<ListTemplate> {
+    return (test_string) => {
+        return JSON.parse(test_string) as JsonObjectFromTemplate<ListTemplate>;
     };
 }
 
-function getAnimationsOfPorObj(
-    animations: CardAnimations,
-    cards: Record<
-        keyof CardAnimations,
-        { por_obj: `obj_${"unit" | "ab"}_${string}` }
-    >,
-): (
-    value: string,
-    index: number,
-) => {
-    name: string;
-    variables: never[];
-    animations: {
-        name: string;
-        useMultipleDirections: false;
-        directions: {
-            looping: true;
-            timeBetweenFrames: number;
-            sprites: AnimationFrame[];
-        }[];
-    }[];
-} {
-    return function (por_obj_name) {
-        return {
-            name: por_obj_name,
-            variables: [],
-            animations: [
-                ...Object.getOwnPropertyNames(animations)
-                    .filter((card_id) => cards[card_id].por_obj == por_obj_name)
-                    .map(getCardsAnimation(animations)),
-            ],
-        };
-    };
-}
-
-function getCardsAnimation(animations: CardAnimations): (
-    value: string,
-    index: number,
-    array: string[],
-) => {
-    name: string;
-    useMultipleDirections: false;
-    directions: {
-        looping: true;
-        timeBetweenFrames: number;
-        sprites: AnimationFrame[];
-    }[];
-} {
-    return function (card_id) {
-        return {
-            name: card_id,
-            useMultipleDirections: false,
-            directions: [
-                {
-                    looping: true,
-                    timeBetweenFrames: 0.068,
-                    sprites: [
-                        ...(
-                            animations[card_id].sprites
-                                .map(wrapSpriteFilePath)
-                                .map((animation_frame) => {
-                                    return {
-                                        ...animation_frame,
-                                        customCollisionMask:
-                                            animations[card_id]
-                                                .collison_polygon,
-                                    };
-                                })
-                                .reduce(
-                                    orderAnimationFrames(animations, card_id),
-                                    animations[card_id].frame_order ?? [],
-                                ) as {
-                                image: string;
-                                hasCustomCollisionMask: true;
-                                customCollisionMask: {
-                                    x: number;
-                                    y: number;
-                                }[][];
-                            }[]
-                        ).map(
-                            populateAnimationFramePoints(animations, card_id),
-                        ),
-                    ],
-                },
-            ],
-        };
-    };
-}
-
-function wrapSpriteFilePath(sprite_file_path: string) {
-    return {
-        image: sprite_file_path,
-        hasCustomCollisionMask: true as const,
-    };
-}
-
-function orderAnimationFrames(animations: CardAnimations, card_id: string) {
-    return function (
-        out: (
-            | number
-            | {
-                  image: string;
-              }
-        )[],
-        sprite: {
-            image: string;
-        },
-        index: number,
-        array: (
-            | number
-            | {
-                  image: string;
-              }
-        )[],
-    ): (
-        | number
-        | {
-              image: string;
-          }
-    )[] {
-        if (animations[card_id].frame_order)
-            return out.map((frame_index) =>
-                frame_index == index ? sprite : frame_index,
-            );
-        return [...out, ...array.slice(index), ...array.slice(0, index)];
-    };
-}
-
-function populateAnimationFramePoints(
-    animations: CardAnimations,
-    card_id: string,
-): (
-    value: {
-        image: string;
-        hasCustomCollisionMask: true;
-        customCollisionMask: { x: number; y: number }[][];
-    },
-    index: number,
-    array: {
-        image: string;
-        hasCustomCollisionMask: true;
-        customCollisionMask: { x: number; y: number }[][];
-    }[],
-) => AnimationFrame {
-    return (frame_data) => {
-        return {
-            ...frame_data,
-            centerPoint: {
-                ...animations[card_id].points.center,
-                automatic: true,
-                name: "centre",
-            },
-            originPoint: {
-                ...animations[card_id].points.origin,
-                name: "origine",
-            },
-            points: Object.getOwnPropertyNames(animations[card_id].points).map(
-                (name) => {
-                    return { ...animations[card_id].points[name], name: name };
-                },
-            ),
-        };
-    };
-}
-
-export function mergeDeep<MergeTarget = object>(
+function mergeDeep<MergeTarget = object>(
     target: MergeTarget,
     addition?: Partial<MergeTarget>,
 ): MergeTarget {
@@ -463,17 +551,184 @@ export function mergeDeep<MergeTarget = object>(
 
     return out as MergeTarget;
 }
-export function fixDataPaths(
-    data: Partial<Data>,
-    mod_path: string,
-): Partial<Data> {
-    if (data.resources)
-        data.resources.resources = data.resources.resources.map((resource) => {
-            resource.file = window.remote_replace.path.join(
-                mod_path,
-                resource.file,
-            );
-            return resource;
-        });
-    return data;
+
+export const json_manifest: JsonProcessingManifest = {
+    comms: comms_manifest,
+    cards: cards_manifest,
+    encounters: encounters_manifest,
+    loot_list_up: loot_list_up_manifest,
+    text_lists: text_lists_manifest,
+    tutorials: tutorials_manifest,
+    upgrades: upgrades_manifest,
+    cloud_labels: cloud_labels_manifest,
+    credits: credits_manifest,
+    loot_list_card: loot_list_card_manifest,
+    sp_up: sp_up_manifest,
+    tooltips: tooltips_manifest,
+    unlock_cond: unlock_cond_manifest,
+    data: data_manifest,
+    metadata: metadata_manifest,
+    card_animations: card_animations_manifest,
+    factions: factions_manifest,
+};
+
+const cachedJsons: Partial<JsonManifest> = {};
+export function getCachedJson<JsonName extends keyof JsonManifest>(
+    json_name: JsonName,
+): JsonManifest[JsonName] {
+    if (!cachedJsons[json_name])
+        throw new ReferenceError(
+            "Cached jsons were accessed before jsons were cached",
+        );
+    return cachedJsons[json_name] as JsonManifest[JsonName];
+}
+export function getLoadingSequenceToCacheJsons(): LoadSequenceElement[] {
+    return getLoadingSequenceToCombineCachedJsons().concat(
+        getLoadingSequenceToApplyCachedJsons(),
+    );
+}
+
+function getLoadingSequenceToCombineCachedJsons() {
+    return mapEnabledModEntries((mod_entry) => {
+        return {
+            status_text: `Integrating ${mod_entry.getName()} 's Jsons`,
+            function: () =>
+                Object.getOwnPropertyNames(mod_entry.getCachedJsons()).map(
+                    (json_name) => {
+                        return {
+                            status_text: `Integrating ${mod_entry.getName()}'s ${json_name}.json`,
+                            function: integrateJson.bind(
+                                {},
+                                json_name as keyof JsonManifest,
+                                mod_entry,
+                            ),
+                        };
+                    },
+                ),
+        };
+    });
+}
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+function integrateJson<Key extends keyof JsonManifest>(
+    json_name: Key,
+    mod_entry: ModEntry,
+) {
+    cachedJsons[json_name] = json_manifest[json_name].merger(
+        cachedJsons[json_name] ?? json_manifest[json_name].reasonable_default,
+        mod_entry.getCachedJsons()[json_name] ??
+            json_manifest[json_name].reasonable_default,
+    );
+}
+
+function getLoadingSequenceToApplyCachedJsons() {
+    return Object.getOwnPropertyNames(cachedJsons).map((json_name) => {
+        return {
+            status_text: `Applying ${json_name}`,
+            function: () => {
+                return Object.getOwnPropertyNames(
+                    json_manifest[json_name as keyof JsonManifest].application,
+                ).map((file_to_apply_to) => {
+                    return {
+                        status_text: `Applying ${json_name} to ${file_to_apply_to}`,
+                        function: applyJson.bind(
+                            {},
+                            json_name as keyof JsonManifest,
+                            file_to_apply_to as keyof JsonManifest,
+                        ),
+                    };
+                });
+            },
+        };
+    });
+}
+
+function applyJson<
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+    Key extends keyof JsonManifest,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+    OutputKey extends keyof JsonManifest,
+>(json_name: Key, file_to_apply_to: OutputKey) {
+    const application =
+        json_manifest[json_name].application?.[file_to_apply_to];
+    if (!application) return;
+    if (typeof application == "function") {
+        cachedJsons[file_to_apply_to] = (
+            application as (
+                source: JsonManifest[Key],
+            ) => JsonManifest[OutputKey]
+        )(
+            cachedJsons[json_name] ??
+                json_manifest[json_name].reasonable_default,
+        );
+    } else {
+        cachedJsons[file_to_apply_to] = (
+            application.applicator as (
+                source: JsonManifest[Key],
+                ...additional_sources: JsonManifest[keyof JsonManifest][]
+            ) => JsonManifest[OutputKey]
+        )(
+            cachedJsons[json_name] ??
+                json_manifest[json_name].reasonable_default,
+            ...application.additional_sources.map((additional_source) => {
+                return (
+                    cachedJsons[additional_source] ??
+                    json_manifest[additional_source].reasonable_default
+                );
+            }),
+        );
+    }
+}
+
+let cachedCode: typeof gdjs.CommandCode | undefined = undefined;
+export function getCachedCode(): typeof gdjs.CommandCode {
+    if (!cachedCode)
+        throw new ReferenceError(
+            "Cached code0 was accessed before code0 was cached",
+        );
+    return cachedCode;
+}
+export function getLoadingSequenceToCacheCodeFromMods(): LoadSequenceElement[] {
+    return (
+        [
+            {
+                status_text: "Getting code from base game",
+                function: () => {
+                    eval(
+                        (
+                            Array.from(
+                                document.getElementById("mod_list")?.children ??
+                                    [],
+                            ) as ModEntry[]
+                        )
+                            .map((mod_entry) => mod_entry.getCode())
+                            .reduce((new_code, code) => code + new_code),
+                    );
+                    cachedCode = gdjs.CommandCode;
+                },
+            },
+        ] as LoadSequenceElement[]
+    ).concat(
+        mapEnabledModEntries((mod_entry) => {
+            return {
+                status_text: `Adjusting for ${mod_entry.getName()}`,
+                function: async () => {
+                    for (const name in cachedCode) {
+                        if (!name.startsWith("eventsList")) continue;
+                        cachedCode[name as `eventsList${number}`] = (
+                            await mod_entry.getCode0Adjustments()
+                        )(cachedCode[name as `eventsList${number}`]);
+                    }
+                },
+            };
+        }) as LoadSequenceElement[],
+    );
+}
+function mapEnabledModEntries<Out>(mapper: (mod: ModEntry) => Out): Out[] {
+    return (
+        Array.from(
+            document.getElementById("mod_list")?.children ?? [],
+        ) as ModEntry[]
+    )
+        .filter((mod_entry) => mod_entry.enabled)
+        .map(mapper);
 }
